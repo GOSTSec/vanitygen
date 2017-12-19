@@ -46,6 +46,33 @@ vg_exec_context_new_key(void)
 	return EC_KEY_new_by_curve_name(NID_secp256k1);
 }
 
+static EC_KEY *
+vg_exec_context_new_gost_key(void)
+{
+	EC_KEY * pkey = EC_KEY_new ();
+	// GOST 34.10-2012, param sets A
+	BIGNUM * a = 0, * b = 0, * p = 0, * q = 0, * x = 0, * y = 0;
+	BN_hex2bn(&a, "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFD94");
+	BN_hex2bn(&b, "A6");
+	BN_hex2bn(&p, "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFD97");
+	BN_hex2bn(&q, "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF6C611070995AD10045841B09B761B893");
+	BN_hex2bn(&x, "1");
+	BN_hex2bn(&y, "8D91E471E0989CDA27DF505A453F2B7635294F2DDF23E3B122ACC99C9E9F1E14");	
+
+	BN_CTX * ctx = BN_CTX_new ();
+	EC_GROUP *group = EC_GROUP_new_curve_GFp (p, a, b, ctx);
+	EC_POINT * P = EC_POINT_new (group);
+	EC_POINT_set_affine_coordinates_GFp (group, P, x, y, ctx);
+	EC_GROUP_set_generator (group, P, q, 0);
+	EC_GROUP_set_curve_name (group, NID_id_GostR3410_2001);
+	EC_POINT_free(P);
+	BN_CTX_free (ctx);	
+	EC_KEY_set_group(pkey, group);
+	EC_GROUP_free (group);	
+	BN_free (a); BN_free (b); BN_free (p); BN_free (q); BN_free (x); BN_free (y);	
+	return pkey;
+}
+
 /*
  * Thread synchronization helpers
  */
@@ -160,7 +187,10 @@ vg_exec_context_init(vg_context_t *vcp, vg_exec_context_t *vxcp)
 
 	vxcp->vxc_bnctx = BN_CTX_new();
 	assert(vxcp->vxc_bnctx);
-	vxcp->vxc_key = vg_exec_context_new_key();
+	if (vcp->vc_pubkeytype == 38) // gostcoin	
+		vxcp->vxc_key = vg_exec_context_new_gost_key();
+	else
+		vxcp->vxc_key = vg_exec_context_new_key();
 	assert(vxcp->vxc_key);
 	EC_KEY_precompute_mult(vxcp->vxc_key, vxcp->vxc_bnctx);
 
