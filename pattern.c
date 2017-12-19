@@ -708,7 +708,6 @@ get_prefix_ranges(int addrtype, const char *pfx, BIGNUM **result,
 	BN_set_word(&bnbase, 58);
 
 	p = strlen(pfx);
-
 	for (i = 0; i < p; i++) {
 		c = vg_b58_reverse_map[(int)pfx[i]];
 		if (c == -1) {
@@ -1400,6 +1399,10 @@ vg_prefix_context_add_patterns(vg_context_t *vcp,
 		case 52:
 			ats = "namecoin";
 			bw = "\"M\" or \"N\"";
+			break;
+		case 38:
+			ats = "gostcoin";
+			bw = "\"G\"";
 			break;
 		default:
 			break;

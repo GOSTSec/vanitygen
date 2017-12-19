@@ -312,6 +312,7 @@ usage(const char *name)
 "-k            Keep pattern and continue search after finding a match\n"
 "-1            Stop after first match\n"
 "-N            Generate namecoin address\n"
+"-G            Generate gostcoin address\n"
 "-T            Generate bitcoin testnet address\n"
 "-X <version>  Generate address with the given version\n"
 "-F <format>   Generate address with the given format (pubkey or script)\n"
@@ -361,7 +362,7 @@ main(int argc, char **argv)
 
 	int i;
 
-	while ((opt = getopt(argc, argv, "vqnrik1eE:P:NTX:F:t:h?f:o:s:")) != -1) {
+	while ((opt = getopt(argc, argv, "vqnrik1eE:P:NGTX:F:t:h?f:o:s:")) != -1) {
 		switch (opt) {
 		case 'v':
 			verbose = 2;
@@ -389,6 +390,11 @@ main(int argc, char **argv)
 			privtype = 180;
 			scriptaddrtype = -1;
 			break;
+		case 'G':
+			addrtype = 38;
+			privtype = 128 + addrtype;
+			scriptaddrtype = addrtype;
+			break;	
 		case 'T':
 			addrtype = 111;
 			privtype = 239;
