@@ -38,6 +38,7 @@
 
 #include "pattern.h"
 #include "util.h"
+#include "streebog.h"
 
 const char *vg_b58_alphabet = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
 
@@ -96,7 +97,7 @@ dumpbn(const BIGNUM *bn)
  */
 
 void
-vg_b58_encode_check(void *buf, size_t len, char *result)
+vg_b58_encode_check(void *buf, size_t len, char *result, int gost)
 {
 	unsigned char hash1[32];
 	unsigned char hash2[32];
@@ -123,8 +124,13 @@ vg_b58_encode_check(void *buf, size_t len, char *result)
 	binres = (unsigned char*) malloc(brlen);
 	memcpy(binres, buf, len);
 
-	SHA256(binres, len, hash1);
-	SHA256(hash1, sizeof(hash1), hash2);
+	if (gost)
+	{	
+		SHA256(binres, len, hash1);
+		SHA256(hash1, sizeof(hash1), hash2);
+	}
+	else
+		gostd_hash (hash2, binres, len);
 	memcpy(&binres[len], hash2, 4);
 
 	BN_bin2bn(binres, len + 4, bn);
@@ -256,7 +262,7 @@ vg_encode_address(const EC_POINT *ppoint, const EC_GROUP *pgroup,
 	SHA256(eckey_buf, pend - eckey_buf, hash1);
 	RIPEMD160(hash1, sizeof(hash1), &binres[1]);
 
-	vg_b58_encode_check(binres, sizeof(binres), result);
+	vg_b58_encode_check(binres, sizeof(binres), result, addrtype == 38);
 }
 
 void
@@ -284,7 +290,7 @@ vg_encode_script_address(const EC_POINT *ppoint, const EC_GROUP *pgroup,
 	SHA256(script_buf, 69, hash1);
 	RIPEMD160(hash1, sizeof(hash1), &binres[1]);
 
-	vg_b58_encode_check(binres, sizeof(binres), result);
+	vg_b58_encode_check(binres, sizeof(binres), result, 0);
 }
 
 void
@@ -303,7 +309,7 @@ vg_encode_privkey(const EC_KEY *pkey, int addrtype, char *result)
 		memset(eckey_buf + 1, 0, 32 - nbytes);
 	BN_bn2bin(bn, &eckey_buf[33 - nbytes]);
 
-	vg_b58_encode_check(eckey_buf, 33, result);
+	vg_b58_encode_check(eckey_buf, 33, result, addrtype == 166);
 }
 
 int
@@ -686,7 +692,7 @@ vg_protect_encode_privkey(char *out,
 	OPENSSL_cleanse(ecpriv, sizeof(ecpriv));
 
 	ecenc[0] = restype;
-	vg_b58_encode_check(ecenc, nbytes + 1, out);
+	vg_b58_encode_check(ecenc, nbytes + 1, out, keytype == 166);
 	nbytes = strlen(out);
 	return nbytes;
 }

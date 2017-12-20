@@ -392,7 +392,7 @@ main(int argc, char **argv)
 			break;
 		case 'G':
 			addrtype = 38;
-			privtype = 128 + addrtype;
+			privtype = 166; // 128+38
 			scriptaddrtype = addrtype;
 			break;	
 		case 'T':
