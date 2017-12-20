@@ -34,7 +34,7 @@
 #include "pattern.h"
 #include "util.h"
 #include "avl.h"
-
+#include "streebog.h"
 
 /*
  * Common code for execution helper
@@ -270,7 +270,7 @@ vg_exec_context_calc_address(vg_exec_context_t *vxcp)
 {
 	EC_POINT *pubkey;
 	const EC_GROUP *pgroup;
-	unsigned char eckey_buf[96], hash1[32], hash2[20];
+	unsigned char eckey_buf[96], hash1[32], hash2[20], hash3[64];
 	int len;
 
 	vg_exec_context_consolidate_key(vxcp);
@@ -290,8 +290,16 @@ vg_exec_context_calc_address(vg_exec_context_t *vxcp)
 				 eckey_buf,
 				 sizeof(eckey_buf),
 				 vxcp->vxc_bnctx);
-	SHA256(eckey_buf, len, hash1);
-	RIPEMD160(hash1, sizeof(hash1), hash2);
+	if (vxcp->vxc_vc->vc_pubkeytype == 38) // gostcoin	
+	{
+		sph_gost512 (hash3, eckey_buf, len);
+		RIPEMD160(hash3, 64, hash2);		
+	}
+	else
+	{	
+		SHA256(eckey_buf, len, hash1);
+		RIPEMD160(hash1, sizeof(hash1), hash2);
+	}
 	memcpy(&vxcp->vxc_binres[1],
 	       hash2, 20);
 	EC_POINT_free(pubkey);

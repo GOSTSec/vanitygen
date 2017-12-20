@@ -247,7 +247,7 @@ vg_encode_address(const EC_POINT *ppoint, const EC_GROUP *pgroup,
 {
 	unsigned char eckey_buf[128], *pend;
 	unsigned char binres[21] = {0,};
-	unsigned char hash1[32];
+	unsigned char hash1[32], hash2[64];
 
 	pend = eckey_buf;
 
@@ -259,8 +259,16 @@ vg_encode_address(const EC_POINT *ppoint, const EC_GROUP *pgroup,
 			   NULL);
 	pend = eckey_buf + 0x41;
 	binres[0] = addrtype;
-	SHA256(eckey_buf, pend - eckey_buf, hash1);
-	RIPEMD160(hash1, sizeof(hash1), &binres[1]);
+	if (addrtype == 38)
+	{
+		sph_gost512 (hash2, eckey_buf, pend - eckey_buf);
+		RIPEMD160(hash2, 64, &binres[1]);
+	}
+	else
+	{
+		SHA256(eckey_buf, pend - eckey_buf, hash1);
+		RIPEMD160(hash1, sizeof(hash1), &binres[1]);
+	}
 
 	vg_b58_encode_check(binres, sizeof(binres), result, addrtype == 38);
 }
@@ -287,6 +295,7 @@ vg_encode_script_address(const EC_POINT *ppoint, const EC_GROUP *pgroup,
 			   65,
 			   NULL);
 	binres[0] = addrtype;
+	// TODO
 	SHA256(script_buf, 69, hash1);
 	RIPEMD160(hash1, sizeof(hash1), &binres[1]);
 

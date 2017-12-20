@@ -31,6 +31,7 @@
 
 #include "pattern.h"
 #include "util.h"
+#include "streebog.h"
 
 const char *version = VANITYGEN_VERSION;
 
@@ -44,7 +45,7 @@ vg_thread_loop(void *arg)
 {
 	unsigned char hash_buf[128];
 	unsigned char *eckey_buf;
-	unsigned char hash1[32];
+	unsigned char hash1[32], hash2[64];
 
 	int i, c, len, output_interval;
 	int hash_len;
@@ -200,8 +201,16 @@ vg_thread_loop(void *arg)
 						 vxcp->vxc_bnctx);
 			assert(len == 65);
 
-			SHA256(hash_buf, hash_len, hash1);
-			RIPEMD160(hash1, sizeof(hash1), &vxcp->vxc_binres[1]);
+			if (vcp->vc_pubkeytype == 38) // gostcoin	
+			{
+				sph_gost512 (hash2, hash_buf, hash_len);
+				RIPEMD160(hash2, 64, &vxcp->vxc_binres[1]);
+			}
+			else
+			{
+				SHA256(hash_buf, hash_len, hash1);
+				RIPEMD160(hash1, sizeof(hash1), &vxcp->vxc_binres[1]);
+			}
 
 			switch (test_func(vxcp)) {
 			case 1:
