@@ -1766,8 +1766,13 @@ vg_regex_test(vg_exec_context_t *vxcp)
 	BN_init(&bnrem);
 
 	/* Hash the hash and write the four byte check code */
-	SHA256(vxcp->vxc_binres, 21, hash1);
-	SHA256(hash1, sizeof(hash1), hash2);
+	if (vxcp->vxc_vc->vc_pubkeytype == 38) // gostcoin
+		gostd_hash (hash2, vxcp->vxc_binres, 21);
+	else
+	{	
+		SHA256(vxcp->vxc_binres, 21, hash1);
+		SHA256(hash1, sizeof(hash1), hash2);
+	}
 	memcpy(&vxcp->vxc_binres[21], hash2, 4);
 
 	bn = &vxcp->vxc_bntmp;

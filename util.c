@@ -125,12 +125,12 @@ vg_b58_encode_check(void *buf, size_t len, char *result, int gost)
 	memcpy(binres, buf, len);
 
 	if (gost)
+		gostd_hash (hash2, binres, len);
+	else	
 	{	
 		SHA256(binres, len, hash1);
 		SHA256(hash1, sizeof(hash1), hash2);
 	}
-	else
-		gostd_hash (hash2, binres, len);
 	memcpy(&binres[len], hash2, 4);
 
 	BN_bin2bn(binres, len + 4, bn);
@@ -166,7 +166,7 @@ vg_b58_encode_check(void *buf, size_t len, char *result, int gost)
 	(((c) == '\r') || ((c) == '\n') || ((c) == ' ') || ((c) == '\t'))
 
 int
-vg_b58_decode_check(const char *input, void *buf, size_t len)
+vg_b58_decode_check(const char *input, void *buf, size_t len, int gost)
 {
 	int i, l, c;
 	unsigned char *xbuf = NULL;
@@ -218,8 +218,13 @@ vg_b58_decode_check(const char *input, void *buf, size_t len)
 
 	/* Check the hash code */
 	l -= 4;
-	SHA256(xbuf, l, hash1);
-	SHA256(hash1, sizeof(hash1), hash2);
+	if (gost)
+		gostd_hash (hash2, xbuf, l);
+	else
+	{
+		SHA256(xbuf, l, hash1);
+		SHA256(hash1, sizeof(hash1), hash2);
+	}
 	if (memcmp(hash2, xbuf + l, 4))
 		goto out;
 
@@ -353,7 +358,7 @@ vg_decode_privkey(const char *b58encoded, EC_KEY *pkey, int *addrtype)
 	unsigned char ecpriv[48];
 	int res;
 
-	res = vg_b58_decode_check(b58encoded, ecpriv, sizeof(ecpriv));
+	res = vg_b58_decode_check(b58encoded, ecpriv, sizeof(ecpriv), 0);
 	if (res != 33)
 		return 0;
 
@@ -717,7 +722,7 @@ vg_protect_decode_privkey(EC_KEY *pkey, int *keytype,
 	int restype;
 	int res;
 
-	res = vg_b58_decode_check(encoded, ecenc, sizeof(ecenc));
+	res = vg_b58_decode_check(encoded, ecenc, sizeof(ecenc), 0);
 
 	if ((res < 2) || (res > sizeof(ecenc)))
 		return 0;
