@@ -1043,7 +1043,7 @@ void gostd_hash(void *output, const void *input, int len)
 {
 	unsigned char hash[64];
 
-	sph_gost512(hash, (const void*)input, 80);
+	sph_gost512(hash, (const void*)input, len);
 	sph_gost256(hash, (const void*)hash, 64);
 
 	int i;
